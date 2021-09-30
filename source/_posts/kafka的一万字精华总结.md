@@ -7,7 +7,7 @@ tags:
   - little_eight
 ---
 ## 什么是 Kafka
-Kafka 是一个分布式的，支持多分区、多副本的分布式消息流平台，它同时也是一款开源的**基于发布订阅模式的消息引擎系统，**简单来说就是一个分布式消息队列。
+&ensp;&ensp;Kafka 是一个分布式的，支持多分区、多副本的分布式消息流平台，它同时也是一款开源的**基于发布订阅模式的消息引擎系统，**简单来说就是一个分布式消息队列。
 在2.8版本之前，无论是Kafka 集群，还是consumer都依赖于zookeeper集群保存一些meta信息，来保证系统可用性。2.8版本之后使用内嵌的KRaft作为zookeeper部分功能的替代品。
 ![](https://gitee.com/littleeight/blog-images/raw/master/kafka%E7%9A%84%E4%B8%80%E4%B8%87%E5%AD%97%E7%B2%BE%E5%8D%8E%E6%80%BB%E7%BB%93/1.png)
 <!--more-->
