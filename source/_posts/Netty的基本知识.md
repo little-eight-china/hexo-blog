@@ -27,7 +27,8 @@ Netty连接客户端端或绑定服务器需要知道如何发送或接收消息
 
 
 ### 一段客户端的示例代码
-`public void start() throws Exception { 
+``` JAVA
+public void start() throws Exception { 
     EventLoopGroup group = new NioEventLoopGroup(); 
     try { 
         Bootstrap b = new Bootstrap(); 
@@ -43,13 +44,15 @@ Netty连接客户端端或绑定服务器需要知道如何发送或接收消息
     } finally { 
         group.shutdownGracefully().sync(); 
     } 
-}`
+}
+```
 ​
 
 ​
 
 ### 一段服务端的示例代码
-`public void start() throws Exception {
+``` JAVA
+public void start() throws Exception {
     EventLoopGroup bossGroup = new NioEventLoopGroup();
     EventLoopGroup workGroup = new NioEventLoopGroup();
     try { 
@@ -72,7 +75,8 @@ Netty连接客户端端或绑定服务器需要知道如何发送或接收消息
     } finally { 
         group.shutdownGracefully().sync(); 
     } 
-}`
+}
+```
 ### Bootstrap、ServerBootstrap
       相当于客户端与服务端。
 Bootstrap和ServerBootstrap之间的差异： 
