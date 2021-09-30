@@ -1,0 +1,53 @@
+menu:
+  home: /|| fa fa-home
+  archives: /archives/|| fa fa-archive
+  categories: /categories/|| fa fa-th
+  tags: /tags/|| fa fa-tags
+
+menu_settings:
+  badges: true
+
+scheme: Gemini
+
+social:
+  GitHub: https://github.com/little-eight-china|| fab fa-github
+  CSDN: https://blog.csdn.net/h295928126|| fa fa-crosshairs
+
+links_settings:
+  icon: fa fa-globe
+  title: 成人链接
+links:
+  Acris' Blog: https://acris.me/
+
+avatar: 
+  url: /img/head.png
+
+symbols_count_time:
+  symbols: true
+  time: true
+  total_symbols: true
+  total_time: true
+  exclude_codeblock: false
+  awl: 4
+  wpm: 275
+  suffix: "mins."
+
+quicklink: true
+
+livere_uid: MTAyMC8zODE4Ni8xNDcxNA==
+
+fancybox: true
+
+lazyload: true
+
+local_search:
+  enable: true
+
+busuanzi_count:
+  enable: true
+  total_visitors: true  #统计访客数
+  total_visitors_icon: fa fa-user
+  total_views: true  #统计访问数
+  total_views_icon: fa fa-eye
+  post_views: true  #统计文章阅读数
+  post_views_icon: far fa-eye
