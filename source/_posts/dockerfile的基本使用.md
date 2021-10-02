@@ -11,47 +11,47 @@ tags:
 ​
 
 ### FROM 
-基础镜像，该配置是基于某些镜像的基础上实现的，比如jdk镜像
+&ensp;&ensp;&ensp;&ensp;基础镜像，该配置是基于某些镜像的基础上实现的，比如jdk镜像
 
 
 ### MAINTAINER 
-维护者信息
+&ensp;&ensp;&ensp;&ensp;维护者信息
 
 
 ### ENV
-设置环境变量
+&ensp;&ensp;&ensp;&ensp;设置环境变量
 
 
 ### ADD
-文件放在当前目录下，拷过去会自动解压
+&ensp;&ensp;&ensp;&ensp;文件放在当前目录下，拷过去会自动解压
 
 
 ### RUN
-执行命令。RUN命令是创建Docker镜像（image）的步骤，RUN命令对Docker容器造成的改变是会被反映到创建的Docker镜像上的。一个Dockerfile中可以有许多个RUN命令。
+&ensp;&ensp;&ensp;&ensp;执行命令。RUN命令是创建Docker镜像（image）的步骤，RUN命令对Docker容器造成的改变是会被反映到创建的Docker镜像上的。一个Dockerfile中可以有许多个RUN命令。
 
 
 ### WORKDIR
-指定容器的一个目录， 容器启动时执行的命令会在该目录下执行
+&ensp;&ensp;&ensp;&ensp;指定容器的一个目录， 容器启动时执行的命令会在该目录下执行
 
 
 ### EXPOSE
-映射端口
+&ensp;&ensp;&ensp;&ensp;映射端口
 
 
 ### CMD
-镜像最终运行的命令。CMD命令是当Docker镜像被启动后Docker容器将会默认执行的命令。一个Dockerfile中只能有一个CMD命令。通过执行docker run xxx启动镜像可以重载CMD命令。
+&ensp;&ensp;&ensp;&ensp;镜像最终运行的命令。CMD命令是当Docker镜像被启动后Docker容器将会默认执行的命令。一个Dockerfile中只能有一个CMD命令。通过执行docker run xxx启动镜像可以重载CMD命令。
 ​
 <!--more--> 
 ## dockerfile例子
-比如我们想运行一个jar包，先拉取jdk镜像
+&ensp;&ensp;&ensp;&ensp;比如我们想运行一个jar包，先拉取jdk镜像
 `docker pull openjdk:8`
 ​
 
-然后创建一个dockerfile
+&ensp;&ensp;&ensp;&ensp;然后创建一个dockerfile
 `touch Dockerfile`
 ​
 
-编辑这个文件
+&ensp;&ensp;&ensp;&ensp;编辑这个文件
 
 
 `FROM openjdk:8`
@@ -63,11 +63,11 @@ tags:
 ​
 
 ## dockerfile使用
-使用docker build的命令来构建镜像
+&ensp;&ensp;&ensp;&ensp;使用docker build的命令来构建镜像
 `docker build -f Dockerfile -t dockerfile-test:v1 .`
 ​
 
-docker build的命令大概如下：
+&ensp;&ensp;&ensp;&ensp;docker build的命令大概如下：
 
 - **--build-arg=[] :**设置镜像创建时的变量；
 - **--cpu-shares :**设置 cpu 使用权重；
@@ -94,7 +94,7 @@ docker build的命令大概如下：
 
 ​
 
-使用docker images便可查看我们刚刚构建的镜像，然后就可以启动他了。
+&ensp;&ensp;&ensp;&ensp;使用docker images便可查看我们刚刚构建的镜像，然后就可以启动他了。
 ​
 
 ​
