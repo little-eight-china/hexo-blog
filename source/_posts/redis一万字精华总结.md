@@ -56,7 +56,7 @@ tags:
 &ensp;&ensp;&ensp;&ensp;除了redis之外，node.js、nginx也是单线程，他们都是服务器高性能的典范。
 ​
 
-## redis的数据结构
+## redis的基础数据结构
 ### string
 &ensp;&ensp;&ensp;&ensp;它是二进制安全的，可以存储图片或者序列化的对象，值最大存储为512M。底层用sds来使用，相对于c的原生字符串是char[]实现的好处之一是在获取长度时不需要遍历数据。
 &ensp;&ensp;&ensp;&ensp;简单使用举例: set key value、get key等
@@ -111,7 +111,127 @@ list
 - Pub/Sub是发送忘记的方式，并且不存储任何数据；而streams模式下，所有消息被无限期追加在streams中，除非用于显示执行删除（XDEL）。
 - streams的Consumer Groups也是Pub/Sub无法实现的控制方式。
 
-​
+## redis的底层数据结构
+&ensp;&ensp;&ensp;&ensp;每次在Redis数据库中创建一个键值对时，至少会创建两个对象，一个是键对象，一个是值对象，而Redis中的每个对象都是由 redisObject 结构来表示：
+```java
+typedef struct redisObject{
+     //类型
+     unsigned type:4;
+     //编码
+     unsigned encoding:4;
+     //指向底层数据结构的指针
+     void *ptr;
+     //引用计数
+     int refcount;
+     //记录最后一次被程序访问的时间
+     unsigned lru:22;
+}
+```
+&ensp;&ensp;&ensp;&ensp;其中type属性记录了对象的基础数据结构类型，也就是前面提到了五种：
+![](https://gitee.com/littleeight/blog-images/raw/master/redis%E7%9A%84%E4%B8%80%E4%B8%87%E5%AD%97%E7%B2%BE%E5%8D%8E%E6%80%BB%E7%BB%93/add1.png)
+
+&ensp;&ensp;&ensp;&ensp;对象的 prt 指针指向对象底层的数据结构，而数据结构由 encoding 属性来决定：
+![](https://gitee.com/littleeight/blog-images/raw/master/redis%E7%9A%84%E4%B8%80%E4%B8%87%E5%AD%97%E7%B2%BE%E5%8D%8E%E6%80%BB%E7%BB%93/add2.png)
+
+&ensp;&ensp;&ensp;&ensp;而每种类型的对象都至少使用了两种不同的编码：
+![](https://gitee.com/littleeight/blog-images/raw/master/redis%E7%9A%84%E4%B8%80%E4%B8%87%E5%AD%97%E7%B2%BE%E5%8D%8E%E6%80%BB%E7%BB%93/add3.png)
+
+### 字符串对象-string的构成
+&ensp;&ensp;&ensp;&ensp;字符串是Redis最基本的数据类型，不仅所有key都是字符串类型，其它几种数据类型构成的元素也是字符串。注意字符串的长度不能超过512M。
+&ensp;&ensp;&ensp;&ensp;字符串对象的编码可以是int、embstr、raw。
+1、int 编码：保存的是可以用 long 类型表示的整数值。
+2、embstr 编码：保存长度小于44字节的字符串（redis3.2版本之前是39字节，之后是44字节）。
+3、raw 编码：保存长度大于44字节的字符串（redis3.2版本之前是39字节，之后是44字节）。
+
+&ensp;&ensp;&ensp;&ensp;其中raw图示为：
+![](https://gitee.com/littleeight/blog-images/raw/master/redis%E7%9A%84%E4%B8%80%E4%B8%87%E5%AD%97%E7%B2%BE%E5%8D%8E%E6%80%BB%E7%BB%93/add4.png)
+
+
+&ensp;&ensp;&ensp;&ensp;embstr图示为：
+![](https://gitee.com/littleeight/blog-images/raw/master/redis%E7%9A%84%E4%B8%80%E4%B8%87%E5%AD%97%E7%B2%BE%E5%8D%8E%E6%80%BB%E7%BB%93/add5.png)
+
+&ensp;&ensp;&ensp;&ensp;embstr与raw都使用redisObject和sds保存数据，区别在于，embstr的使用只分配一次内存空间（因此redisObject和sds是连续的），而raw需要分配两次内存空间（分别为redisObject和sds分配空间）。因此与raw相比，embstr的好处在于创建时少分配一次空间，删除时少释放一次空间，以及对象的所有数据连在一起，寻找方便。而embstr的坏处也很明显，如果字符串的长度增加需要重新分配内存时，整个redisObject和sds都需要重新分配空间，因此redis中的embstr实现为只读。
+
+&ensp;&ensp;&ensp;&ensp;当 int 编码保存的值不再是整数，或大小超过了long的范围时，自动转化为raw。
+&ensp;&ensp;&ensp;&ensp;对于 embstr 编码，由于 Redis 没有对其编写任何的修改程序（embstr 是只读的），在对embstr对象进行修改时，都会先转化为raw再进行修改，因此，只要是修改embstr对象，修改后的对象一定是raw的，无论是否达到了44个字节。
+
+### 列表对象-list的构成
+&ensp;&ensp;&ensp;&ensp;list 列表，它是简单的字符串列表，按照插入顺序排序，你可以添加一个元素到列表的头部（左边）或者尾部（右边），它的底层实际上是个链表结构。
+&ensp;&ensp;&ensp;&ensp;列表对象的编码可以是 ziplist(压缩列表) 和 linkedlist(双端链表)。 
+
+&ensp;&ensp;&ensp;&ensp;其中ziplist图示为：
+![](https://gitee.com/littleeight/blog-images/raw/master/redis%E7%9A%84%E4%B8%80%E4%B8%87%E5%AD%97%E7%B2%BE%E5%8D%8E%E6%80%BB%E7%BB%93/add6.png)
+
+
+&ensp;&ensp;&ensp;&ensp;linkedlist图示为：
+![](https://gitee.com/littleeight/blog-images/raw/master/redis%E7%9A%84%E4%B8%80%E4%B8%87%E5%AD%97%E7%B2%BE%E5%8D%8E%E6%80%BB%E7%BB%93/add7.png)
+
+&ensp;&ensp;&ensp;&ensp;当同时满足下面两个条件时，使用ziplist（压缩列表）编码：
+1、列表保存元素个数小于512个
+2、每个元素长度小于64字节
+&ensp;&ensp;&ensp;&ensp;不能满足这两个条件的时候使用 linkedlist 编码。
+&ensp;&ensp;&ensp;&ensp;上面两个条件可以在redis.conf 配置文件中的 list-max-ziplist-value选项和 list-max-ziplist-entries 选项进行配置。
+
+### 哈希对象-hash的构成
+&ensp;&ensp;&ensp;&ensp;哈希对象的键是一个字符串类型，值是一个键值对集合。
+&ensp;&ensp;&ensp;&ensp;哈希对象的编码可以是 ziplist 或者 hashtable。
+
+&ensp;&ensp;&ensp;&ensp;其中ziplist图示为：
+![](https://gitee.com/littleeight/blog-images/raw/master/redis%E7%9A%84%E4%B8%80%E4%B8%87%E5%AD%97%E7%B2%BE%E5%8D%8E%E6%80%BB%E7%BB%93/add8.png)
+
+
+&ensp;&ensp;&ensp;&ensp;hashtable图示为：
+![](https://gitee.com/littleeight/blog-images/raw/master/redis%E7%9A%84%E4%B8%80%E4%B8%87%E5%AD%97%E7%B2%BE%E5%8D%8E%E6%80%BB%E7%BB%93/add9.png)
+
+&ensp;&ensp;&ensp;&ensp;hashtable 编码的哈希表对象底层使用字典数据结构，哈希对象中的每个键值对都使用一个字典键值对。
+&ensp;&ensp;&ensp;&ensp;在前面介绍压缩列表时，我们介绍过压缩列表是Redis为了节省内存而开发的，是由一系列特殊编码的连续内存块组成的顺序型数据结构，相对于字典数据结构，压缩列表用于元素个数少、元素长度小的场景。其优势在于集中存储，节省空间。
+
+&ensp;&ensp;&ensp;&ensp;和上面列表对象使用 ziplist 编码一样，当同时满足下面两个条件时，使用ziplist（压缩列表）编码：
+1、列表保存元素个数小于512个
+2、每个元素长度小于64字节
+&ensp;&ensp;&ensp;&ensp;不能满足这两个条件的时候使用 hashtable 编码。第一个条件可以通过配置文件中的 set-max-intset-entries 进行修改。
+
+### 集合对象-set的构成
+&ensp;&ensp;&ensp;&ensp;集合对象 set 是 string 类型（整数也会转换成string类型进行存储）的无序集合。注意集合和列表的区别：集合中的元素是无序的，因此不能通过索引来操作元素；集合中的元素不能有重复。
+&ensp;&ensp;&ensp;&ensp;集合对象的编码可以是 intset 或者 hashtable。
+
+&ensp;&ensp;&ensp;&ensp;其中intset图示为：
+![](https://gitee.com/littleeight/blog-images/raw/master/redis%E7%9A%84%E4%B8%80%E4%B8%87%E5%AD%97%E7%B2%BE%E5%8D%8E%E6%80%BB%E7%BB%93/add10.png)
+
+
+&ensp;&ensp;&ensp;&ensp;hashtable图示为：
+![](https://gitee.com/littleeight/blog-images/raw/master/redis%E7%9A%84%E4%B8%80%E4%B8%87%E5%AD%97%E7%B2%BE%E5%8D%8E%E6%80%BB%E7%BB%93/add11.png)
+
+
+&ensp;&ensp;&ensp;&ensp;当集合同时满足以下两个条件时，使用 intset 编码：
+1、集合对象中所有元素都是整数
+2、集合对象所有元素数量不超过512
+&ensp;&ensp;&ensp;&ensp;不能满足这两个条件的就使用 hashtable 编码。第二个条件可以通过配置文件的 set-max-intset-entries 进行配置。
+
+### 有序集合对象-zset的构成
+&ensp;&ensp;&ensp;&ensp;和上面的集合对象相比，有序集合对象是有序的。与列表使用索引下标作为排序依据不同，有序集合为每个元素设置一个分数（score）作为排序依据。
+&ensp;&ensp;&ensp;&ensp;有序集合的编码可以是 ziplist 或者 skiplist。
+
+&ensp;&ensp;&ensp;&ensp;ziplist 编码的有序集合对象使用压缩列表作为底层实现，每个集合元素使用两个紧挨在一起的压缩列表节点来保存，第一个节点保存元素的成员，第二个节点保存元素的分值。并且压缩列表内的集合元素按分值从小到大的顺序进行排列，小的放置在靠近表头的位置，大的放置在靠近表尾的位置。
+![](https://gitee.com/littleeight/blog-images/raw/master/redis%E7%9A%84%E4%B8%80%E4%B8%87%E5%AD%97%E7%B2%BE%E5%8D%8E%E6%80%BB%E7%BB%93/add12.png)
+
+&ensp;&ensp;&ensp;&ensp;skiplist 编码的有序集合对象使用 zet 结构作为底层实现，一个 zset 结构同时包含一个字典和一个跳跃表：
+```java
+typedef struct zset{
+     //跳跃表
+     zskiplist *zsl;
+     //字典
+     dict *dice;
+} zset;
+```
+&ensp;&ensp;&ensp;&ensp;字典的键保存元素的值，字典的值则保存元素的分值；跳跃表节点的 object 属性保存元素的成员，跳跃表节点的 score 属性保存元素的分值。
+&ensp;&ensp;&ensp;&ensp;这两种数据结构会通过指针来共享相同元素的成员和分值，所以不会产生重复成员和分值，造成内存的浪费。
+&ensp;&ensp;&ensp;&ensp;说明：其实有序集合单独使用字典或跳跃表其中一种数据结构都可以实现，但是这里使用两种数据结构组合起来，原因是假如我们单独使用 字典，虽然能以 O(1) 的时间复杂度查找成员的分值，但是因为字典是以无序的方式来保存集合元素，所以每次进行范围操作的时候都要进行排序；假如我们单独使用跳跃表来实现，虽然能执行范围操作，但是查找操作有 O(1)的复杂度变为了O(logN)。因此Redis使用了两种数据结构来共同实现有序集合。
+
+&ensp;&ensp;&ensp;&ensp;当有序集合对象同时满足以下两个条件时，对象使用 ziplist 编码：
+1、保存的元素数量小于128；
+2、保存的所有元素长度都小于64字节。
+&ensp;&ensp;&ensp;&ensp;不能满足上面两个条件的使用 skiplist 编码。以上两个条件也可以通过Redis配置文件zset-max-ziplist-entries 选项和 zset-max-ziplist-value 进行修改。
 
 ## redis的过期策略
 &ensp;&ensp;&ensp;&ensp;redis有三种过期策略。

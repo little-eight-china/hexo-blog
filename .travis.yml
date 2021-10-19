@@ -26,3 +26,13 @@ after_success:
 # 这里的 REPO_TOKEN 即之前在 travis 项目的环境变量里添加的
 - git push --quiet --force https://$TOKEN@github.com/little-eight-china/little-eight-china.github.io.git
   master
+
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
+  keep_history: true
+  on:
+    branch: master
+
+local_dir: /public
